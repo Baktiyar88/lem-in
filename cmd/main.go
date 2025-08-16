@@ -9,15 +9,14 @@ import (
 )
 
 func main() {
-
 	if len(os.Args) != 2 {
-		log.Fatal("usage: go run ./cmd test_cases/example00.txt")
+		log.Fatal("usage: go run ./cmd/main_new.go test_cases/example00.txt")
 	}
 
 	inputFile := os.Args[1]
 
 	if !strings.HasSuffix(inputFile, ".txt") {
-		log.Fatal("usage: go run ./cmd test_cases/example00.txt")
+		log.Fatal("usage: go run ./cmd/main_new.go test_cases/example00.txt")
 	}
 
 	info, err := os.Stat(inputFile)
@@ -34,15 +33,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	paths := utils.FindPath(graph)
+	// Используем объединенный алгоритм Дейкстры и Суурбалле
+	fmt.Println("Using Dijkstra and Suurballe algorithms...")
+	paths := utils.FindOptimalPaths(graph)
 
 	if len(paths) == 0 {
 		log.Fatal("No paths found from start to end.")
 	}
-	// fmt.Printf("Found %d total paths\n", len(paths))
 
+	fmt.Printf("Found %d optimal paths\n", len(paths))
+
+	// Создаем совместимый набор путей
 	allCompatibleSets := utils.GetCompatiblePaths(paths)
-	// fmt.Printf("Found %d compatible path sets\n", len(allCompatibleSets))
 
 	var bestPaths [][]*utils.Room
 	var bestDistribution []int
@@ -74,5 +76,4 @@ func main() {
 	utils.PrintInputFile(inputFile)
 	fmt.Println("\nResult:")
 	utils.SimulateAnts(bestPaths, bestDistribution)
-
 }
