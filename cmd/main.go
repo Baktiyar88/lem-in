@@ -2,78 +2,48 @@ package main
 
 import (
 	"fmt"
-	"lem-in/utils"
-	"log"
 	"os"
 	"strings"
+
+	"lem-in/logic"
 )
 
+// main runs the simulation in CLI mode only. It requires a path to an input file.
+// Читает путь к файлу из аргументов, печатает исходный ввод
+// и результат симуляции (или ошибку) в требуемом формате.
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatal("usage: go run ./cmd/main_new.go test_cases/example00.txt")
+	if len(os.Args) <= 1 {
+		fmt.Fprintln(os.Stderr, "usage: lem-in <input_file>")
+		os.Exit(1)
 	}
 
-	inputFile := os.Args[1]
+	var input string
+	var inputLines []string
 
-	if !strings.HasSuffix(inputFile, ".txt") {
-		log.Fatal("usage: go run ./cmd/main_new.go test_cases/example00.txt")
-	}
-
-	info, err := os.Stat(inputFile)
+	filePath := os.Args[1]
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "ERROR: cannot read file %s: %v\n", filePath, err)
+		os.Exit(1)
+	}
+	input = string(data)
+	inputLines = strings.Split(strings.TrimSpace(input), "\n")
+
+	// Run the simulation
+	result := logic.RunSimulation(input)
+	if result.Error != "" {
+		fmt.Println(result.Error)
+		os.Exit(1)
 	}
 
-	if info.Size() == 0 {
-		log.Fatal("File is empty")
+	// Print input lines
+	for _, line := range inputLines {
+		fmt.Println(line)
 	}
-
-	graph, err := utils.ParseInput(inputFile)
-	if err != nil {
-		log.Fatal(err)
+	// Print blank line
+	fmt.Println()
+	// Print moves
+	for _, move := range result.Output {
+		fmt.Println(move)
 	}
-
-	// Используем объединенный алгоритм Дейкстры и Суурбалле
-	fmt.Println("Using Dijkstra and Suurballe algorithms...")
-	paths := utils.FindOptimalPaths(graph)
-
-	if len(paths) == 0 {
-		log.Fatal("No paths found from start to end.")
-	}
-
-	fmt.Printf("Found %d optimal paths\n", len(paths))
-
-	// Создаем совместимый набор путей
-	allCompatibleSets := utils.GetCompatiblePaths(paths)
-
-	var bestPaths [][]*utils.Room
-	var bestDistribution []int
-	minTurns := -1
-
-	for _, candidate := range allCompatibleSets {
-		if len(candidate) == 0 {
-			continue
-		}
-		distribution := utils.DistributeAnts(graph.AntCount, candidate)
-		turns := 0
-		for i := range candidate {
-			t := len(candidate[i]) + distribution[i] - 2
-			if t > turns {
-				turns = t
-			}
-		}
-		if minTurns == -1 || turns < minTurns {
-			minTurns = turns
-			bestPaths = candidate
-			bestDistribution = distribution
-		}
-	}
-
-	if len(bestPaths) == 0 {
-		log.Fatal("No compatible paths found for simulation.")
-	}
-
-	utils.PrintInputFile(inputFile)
-	fmt.Println("\nResult:")
-	utils.SimulateAnts(bestPaths, bestDistribution)
 }
