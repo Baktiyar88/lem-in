@@ -129,7 +129,9 @@ func dfsPaths(g *Graph) []Path {
 		current = current[:len(current)-1]
 	}
 	dfs(start)
-	sort.Slice(all, func(i, j int) bool { return len(all[i]) < len(all[j]) })
+	// Стабильная сортировка по длине сохраняет порядок обнаружения
+	// (зависит от порядка рёбер во входе) для путей одинаковой длины.
+	sort.SliceStable(all, func(i, j int) bool { return len(all[i]) < len(all[j]) })
 	return all
 }
 
@@ -180,23 +182,22 @@ func choosePathsDFS(paths []Path, ants int) []Path {
 // пытается Суурбалле, в противном случае — DFS, затем ищет
 // оптимальную комбинацию путей.
 func choosePathsHybrid(g *Graph, ants int) []Path {
-	// Heuristic: Use Suurballe for complex graphs (many links or ants)
+	// Простая стратегия: для небольших входов предпочитаем DFS,
+	// для крупных/плотных графов или большого числа муравьёв — Суурбалле.
 	linkCount := 0
 	for _, links := range g.Links {
 		linkCount += len(links)
 	}
 	complexity := float64(linkCount) / float64(len(g.Rooms))
-	if complexity > 2.0 || ants > 20 {
+
+	if ants > 100 || len(g.Rooms) > 30 || complexity > 2.5 {
 		paths := findDisjointPaths(g)
 		if len(paths) > 0 {
-			turns, _ := calcTimeAndDistribute(paths, ants)
-			if turns <= 8 || len(g.Rooms) > 20 {
-				return paths
-			}
+			return paths
 		}
 	}
 
-	// Fall back to DFS for simpler graphs or if Suurballe fails
+	// По умолчанию — DFS со стабильной сортировкой и выбором лучшей комбинации
 	paths := dfsPaths(g)
 	if len(paths) == 0 {
 		return nil

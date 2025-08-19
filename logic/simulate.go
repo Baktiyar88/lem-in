@@ -12,7 +12,7 @@ func RunSimulation(input string) Response {
 	lines := strings.Split(strings.TrimSpace(input), "\n")
 	g, err := parseLines(lines)
 	if err != nil {
-		return Response{Error: fmt.Sprintf("ERROR: invalid data format, %s", err)}
+		return Response{Error: "ERROR: invalid data format"}
 	}
 	paths := choosePathsHybrid(g, g.NumAnts)
 	if len(paths) == 0 {
